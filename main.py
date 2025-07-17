@@ -3,7 +3,12 @@ import random
 import asyncio
 from datetime import datetime, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+)
 
 # === НАСТРОЙКИ ===
 TOKEN = "8163045913:AAHCTNVwoLB4IkDZ1vyKtcHaKHnpsO7jNnE"
@@ -261,6 +266,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/help — помощь"
     )
 
+# === MAIN FUNCTION ===
 async def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
@@ -277,12 +283,9 @@ async def main():
 
     print("✅ Бот запущен")
 
-    # Вложенный запуск отправки после старта polling
-    async def notify():
-        await asyncio.sleep(1)  # даем боту стартануть
-        await app.bot.send_message(chat_id=OWNER_GROUP_ID)
+    await app.run_polling()
 
-
+# === ENTRY POINT ===
 if __name__ == "__main__":
     import nest_asyncio
     nest_asyncio.apply()
