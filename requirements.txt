@@ -1,4 +1,3 @@
 python-telegram-bot==20.7
-nest-asyncio
 flask
-telegram
+nest_asyncio
