@@ -5,10 +5,12 @@ from datetime import datetime, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 
+# === НАСТРОЙКИ ===
 TOKEN = "8163045913:AAHCTNVwoLB4IkDZ1vyKtcHaKHnpsO7jNnE"
 OWNER_ID = 7143090611
 OWNER_GROUP_ID = -1002735599328
 
+# === ТОВАРЫ ===
 shop_items = {
     "📈 Ежедневный буст": 150,
     "🎭 Смена роли": 300,
@@ -50,7 +52,6 @@ roles = [
     "Хранитель Тейвата", "Посланник Цуруми", "Оракул фатуи", "Капитан флота Бэй Доу"
 ]
 
-# --- Хранилище пользователей ---
 def load_users():
     try:
         with open("users.json", "r") as f:
@@ -62,7 +63,7 @@ def save_users(users):
     with open("users.json", "w") as f:
         json.dump(users, f, indent=2)
 
-# --- Команды ---
+# === КОМАНДЫ ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     users = load_users()
@@ -96,21 +97,18 @@ async def shop(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     await update.message.reply_text("🛍 Выбери товар:", reply_markup=InlineKeyboardMarkup(keyboard))
 
-# --- Покупка ---
 async def handle_purchase(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     user = query.from_user
     users = load_users()
     user_data = users.get(str(user.id))
-
     if not user_data:
         await query.edit_message_text("Ты не зарегистрирован. Напиши /start.")
         return
 
     item = query.data.replace("buy_", "").strip()
     price = shop_items.get(item)
-
     if not price:
         await query.edit_message_text("❌ Ошибка: товар не найден.")
         return
@@ -119,21 +117,36 @@ async def handle_purchase(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("❌ Недостаточно сакур.")
         return
 
-    # Списание
     user_data["balance"] -= price
 
-    # Логика активации буста
     if item == "📈 Ежедневный буст":
         if user_data.get("boost_until"):
             await query.edit_message_text("⚠️ У тебя уже активен буст!")
             return
         user_data["boost_until"] = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
-    
+
     save_users(users)
 
-    await query.edit_message_text("✅ Спасибо за покупку! Ваш товар будет выдан владельцем.")
+    if item == "💬 Цитата дня от бота":
+        await query.edit_message_text(f"🧠 Цитата дня:\n«{random.choice(quotes)}»")
+        return
 
-    # Лог в группу
+    elif item == "🔮 Пророчество":
+        await query.edit_message_text(f"🌌 Пророчество:\n{random.choice(prophecies)}")
+        return
+
+    elif item == "🎲 Рандомная роль":
+        await query.edit_message_text(f"🎭 Твоя роль: {random.choice(roles)}")
+        return
+
+    elif item == "💌 Анонимное сообщение":
+        await query.edit_message_text("✉️ Напиши своё анонимное сообщение:\n/sendmsg <username> <текст>")
+        return
+
+    elif item == "🎁 Подарок другу":
+        await query.edit_message_text("🎁 Чтобы подарить сакуры другу, используй:\n/gift <user_id> <сумма>")
+        return
+
     try:
         await context.bot.send_message(
             chat_id=OWNER_GROUP_ID,
@@ -148,109 +161,8 @@ async def handle_purchase(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         print(f"❌ Ошибка при логировании: {e}")
 
-        # Обработка особых товаров
-        if item == "📈 Ежедневный буст":
-            if user_data.get("boost_until"):
-                await query.edit_message_text("⚠️ У тебя уже активен буст!")
-                return
-            user_data["boost_until"] = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
-            save_users(users)
-            await query.edit_message_text("✅ Буст активен! Спасибо за покупку.")
-            return
-
-        elif item == "💬 Цитата дня от бота":
-            await query.edit_message_text(f"🧠 Цитата дня:\n«{random.choice(quotes)}»\nСпасибо за покупку!")
-            return
-
-        elif item == "🔮 Пророчество":
-            await query.edit_message_text(f"🌌 Пророчество:\n{random.choice(prophecies)}\nСпасибо за покупку!")
-            return
-
-        elif item == "🎲 Рандомная роль":
-            await query.edit_message_text(f"🎭 Твоя роль: {random.choice(roles)}\nСпасибо за покупку!")
-            return
-
-        elif item == "💌 Анонимное сообщение":
-            await query.edit_message_text("✉️ Напиши своё анонимное сообщение:\n\n/sendmsg <username> <текст>")
-            return
-
-        elif item == "🎁 Подарок другу":
-            await query.edit_message_text("🎁 Чтобы сделать подарок, воспользуйся командой:\n/gift <user_id> <сумма>")
-            return
-
-        # Отправка в группу
-        try:
-            await context.bot.send_message(
-                chat_id=OWNER_GROUP_ID,
-                text=(
-                    f"🛍 Покупка!\n"
-                    f"👤 @{user.username or user.first_name} ({user.id})\n"
-                    f"📦 Товар: {item}\n"
-                    f"💰 Списано: {price} 🌸\n"
-                    f"💼 Остаток: {user_data['balance']} 🌸"
-                )
-            )
-        except Exception as e:
-            print(f"❌ Ошибка при логировании: {e}")
-
-        await query.edit_message_text("✅ Спасибо за покупку! Ваш товар будет выдан владельцем.")
-
-    # Обработка отдельных товаров
-    if item == "📈 Ежедневный буст":
-        if user_data.get("boost_until"):
-            await query.edit_message_text("⚠️ У тебя уже активен буст!")
-            return
-        user_data["boost_until"] = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
-        save_users(users)
-        await query.edit_message_text("✅ Буст активен! Спасибо за покупку.")
-        return
-
-    elif item == "💬 Цитата дня от бота":
-        save_users(users)
-        await query.edit_message_text(f"🧠 Цитата дня:\n«{random.choice(quotes)}»\nСпасибо за покупку!")
-        return
-
-    elif item == "🔮 Пророчество":
-        save_users(users)
-        await query.edit_message_text(f"🌌 Пророчество:\n{random.choice(prophecies)}\nСпасибо за покупку!")
-        return
-
-    elif item == "🎲 Рандомная роль":
-        save_users(users)
-        await query.edit_message_text(f"🎭 Твоя роль: {random.choice(roles)}\nСпасибо за покупку!")
-        return
-
-    elif item == "💌 Анонимное сообщение":
-        save_users(users)
-        await query.edit_message_text("✉️ Напиши своё анонимное сообщение:\n/sendmsg <username> <текст>")
-        return
-
-    elif item == "🎁 Подарок другу":
-        save_users(users)
-        await query.edit_message_text("🎁 Чтобы подарить сакуры другу, используй команду:\n/gift <user_id> <сумма>")
-        return
-    
-    save_users(users)
-
-    # после списания баланса и всех специальных веток
-    try:
-        await context.bot.send_message(
-            chat_id=OWNER_GROUP_ID,
-            text=(
-                f"🛍 Покупка!\n"
-                f"👤 @{user.username or user.first_name} ({user.id})\n"
-                f"📦 Товар: {item}\n"
-                f"💰 Списано: {price} 🌸\n"
-                f"💼 Остаток: {user_data['balance']} 🌸"
-            )
-        )
-    except Exception as e:
-        # Если бот не может отправить — выведем ошибку в консоль
-        print(f"❌ Не удалось отправить лог в группу {OWNER_GROUP_ID}: {e}")
-
     await query.edit_message_text("✅ Спасибо за покупку! Ваш товар будет выдан владельцем.")
 
-# --- Ежедневный бонус за буст ---
 async def boost_checker():
     while True:
         users = load_users()
@@ -262,7 +174,6 @@ async def boost_checker():
         save_users(users)
         await asyncio.sleep(86400)
 
-# --- Анонимное сообщение ---
 async def send_anonymous(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) < 2:
         await update.message.reply_text("Формат: /sendmsg <username> <текст>")
@@ -279,7 +190,6 @@ async def send_anonymous(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text("❌ Пользователь не найден.")
 
-# --- Команда /give (только админ) ---
 async def give(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID:
         await update.message.reply_text("❌ У тебя нет прав.")
@@ -302,7 +212,6 @@ async def give(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(f"✅ Начислено {amount} 🌸 пользователю @{users[uid]['name']}")
 
-# --- Команда /gift (подарок другу) ---
 async def gift(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     users = load_users()
@@ -341,7 +250,6 @@ async def gift(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(f"🎉 Ты передал {amount} 🌸 пользователю @{users[uid]['name']}")
 
-# --- /help ---
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "/start — регистрация\n"
@@ -353,21 +261,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/help — помощь"
     )
 
-# --- Установка меню команд ---
-async def set_menu(app):
-    await app.bot.set_my_commands([
-        BotCommand("start", "Регистрация"),
-        BotCommand("profile", "Профиль"),
-        BotCommand("shop", "Магазин"),
-        BotCommand("gift", "Подарок другу"),                # ← здесь
-        BotCommand("sendmsg", "Анонимное сообщение"),
-        BotCommand("give", "Начислить (админ)"),
-        BotCommand("help", "Помощь")
-    ])
-
-# --- Запуск бота ---
 async def main():
     app = ApplicationBuilder().token(TOKEN).build()
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("profile", profile))
     app.add_handler(CommandHandler("shop", shop))
@@ -376,14 +272,18 @@ async def main():
     app.add_handler(CommandHandler("sendmsg", send_anonymous))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CallbackQueryHandler(handle_purchase))
-    app.post_init = set_menu
+
     asyncio.create_task(boost_checker())
     print("✅ Бот запущен")
     await app.bot.send_message(chat_id=OWNER_GROUP_ID, text="🔔 Проверка: бот может писать в группу.")
     await app.run_polling()
 
-# --- Запуск программы ---
+from keep_alive import keep_alive  # ← это в начало файла
+
+...
+
 if __name__ == "__main__":
     import nest_asyncio
     nest_asyncio.apply()
+    keep_alive()  # ← обязательно ДО asyncio.run()
     asyncio.run(main())

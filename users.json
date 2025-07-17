@@ -6,8 +6,8 @@
   },
   "7143090611": {
     "name": "Laya_tanako",
-    "balance": 8050,
-    "boost_until": "2025-07-16"
+    "balance": 8250,
+    "boost_until": null
   },
   "6194038020": {
     "name": "Fevralsss",
@@ -27,6 +27,21 @@
   "1755392394": {
     "name": "youn7er",
     "balance": 7000000,
+    "boost_until": null
+  },
+  "5987534419": {
+    "name": "lublu_kriftts",
+    "balance": 200,
+    "boost_until": null
+  },
+  "8142740597": {
+    "name": "ghost_1n_me",
+    "balance": 200,
+    "boost_until": null
+  },
+  "8185373747": {
+    "name": "Komiko_Kotao",
+    "balance": 200,
     "boost_until": null
   }
 }
