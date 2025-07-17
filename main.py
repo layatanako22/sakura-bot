@@ -274,16 +274,20 @@ async def main():
     app.add_handler(CallbackQueryHandler(handle_purchase))
 
     asyncio.create_task(boost_checker())
+
     print("✅ Бот запущен")
-    await app.bot.send_message(chat_id=OWNER_GROUP_ID, text="🔔 Проверка: бот может писать в группу.")
-    await app.run_polling()
 
-from keep_alive import keep_alive  # ← это в начало файла
+    # Вложенный запуск отправки после старта polling
+    async def notify():
+        await asyncio.sleep(1)  # даем боту стартануть
+        await app.bot.send_message(chat_id=OWNER_GROUP_ID)
 
-...
 
 if __name__ == "__main__":
     import nest_asyncio
     nest_asyncio.apply()
-    keep_alive()  # ← обязательно ДО asyncio.run()
+
+    from keep_alive import keep_alive
+    keep_alive()
+
     asyncio.run(main())
