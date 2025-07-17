@@ -1,2 +1,8 @@
-build:
-pythonVersion: 3.10
+services:
+- type: web
+  name: sakura-bot
+  env: python
+  buildCommand: "pip install -r requirements.txt"
+  startCommand: "python main.py"
+  build:
+    pythonVersion: 3.10

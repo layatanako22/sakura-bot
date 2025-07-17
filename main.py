@@ -268,7 +268,11 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # === MAIN FUNCTION ===
 async def main():
-    app = ApplicationBuilder().token(TOKEN).build()
+    app = (
+        ApplicationBuilder()
+        .token(TOKEN)
+        .build()
+    )
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("profile", profile))
